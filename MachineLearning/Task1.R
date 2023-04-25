@@ -2,7 +2,7 @@ library(readxl)
 library(NbClust)
 library(cluster) # Load the 'cluster' package
 
-
+# Load the dataset
 vehicles <- read_xlsx("vehicles.xlsx")
 
 # Select only the first 18 attributes
@@ -20,13 +20,14 @@ IQR <- Q3 - Q1
 threshold <- 1.5 * IQR
 outlier_indices <- which(apply(scaled_data, 2, function(x) any(x < (Q1 - threshold) | x > (Q3 + threshold))))
 vehicles <- vehicles[, -outlier_indices]
-#boxplot(outlier_indices)
-
+boxplot(outlier_indices)
 #-------------------------------------------------------------------------------------------------------------
 #nb cluster
 set.seed(123)# Set the random seed for reproducibility
+par(mar=c(1,1,1,1))
 nb <- NbClust(scaled_data, min.nc=2, max.nc=10, method="kmeans")
 nb$Best.nc
+
 #--------------------------------------------------------------------------------------------------------------
 
 #Elbow methods
@@ -111,3 +112,28 @@ for (i in 1:k) {
 }
 print(BSS_indices)
 print(WSS_indices)
+
+#--------------------------------------------------------------------------------------------------------------
+
+# Create a silhouette plot
+sil <- silhouette(km$cluster, dist(scaled_data))
+plot(sil)
+
+# Calculate the average silhouette width score
+sil_width <- summary(sil)$avg.width
+cat("Average silhouette width score:", sil_width, "\n")
+
+# Show the related kmeans output
+print(km)
+
+# Show the information for the centers
+print(km$centers)
+
+# Show the clustered results
+cluster_results <- as.data.frame(km$cluster)
+colnames(cluster_results) <- "Cluster"
+print(cluster_results)
+
+#--------------------------------------------------------------------------------------------------------------
+
+

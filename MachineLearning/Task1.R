@@ -1,6 +1,6 @@
 library(readxl)
 library(NbClust)
-library(cluster) # Load the 'cluster' package, which contains the kmeans and silhouette functions
+library(cluster) # Load the 'cluster' package
 
 
 vehicles <- read_xlsx("vehicles.xlsx")
@@ -20,7 +20,7 @@ IQR <- Q3 - Q1
 threshold <- 1.5 * IQR
 outlier_indices <- which(apply(scaled_data, 2, function(x) any(x < (Q1 - threshold) | x > (Q3 + threshold))))
 vehicles <- vehicles[, -outlier_indices]
-boxplot(outlier_indices)
+#boxplot(outlier_indices)
 
 #-------------------------------------------------------------------------------------------------------------
 #nb cluster
@@ -89,3 +89,25 @@ cat("Best number of clusters based on the silhouette method: ", best_k, "\n")
 
 
 #--------------------------------------------------------------------------------------------------------------
+
+
+# Show the clustered results
+cluster_results <- as.data.frame(km$cluster)
+colnames(cluster_results) <- "Cluster"
+print(cluster_results)
+
+# Calculate the ratio of BSS over TSS
+BSS <- km$betweenss
+TSS <- km$totss
+ratio_BSS_TSS <- BSS/TSS
+print(ratio_BSS_TSS)
+
+# Calculate the BSS and WSS indices
+BSS_indices <- numeric(k)
+WSS_indices <- numeric(k)
+for (i in 1:k) {
+  BSS_indices[i] <- sum((km$centers[i,] - mean(scaled_data))^2) * sum(km$size[km$cluster==i])
+  WSS_indices[i] <- sum((scaled_data[km$cluster==i,] - km$centers[i,])^2)
+}
+print(BSS_indices)
+print(WSS_indices)

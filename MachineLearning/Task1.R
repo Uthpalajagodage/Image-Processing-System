@@ -12,8 +12,6 @@ print(vehicles)
 vehicles <- vehicles[,1:18]
 plot(vehicles)
 
-
-
 # Scale the data
 scaled_data <- scale(vehicles)
 plot(scaled_data)
@@ -25,30 +23,42 @@ IQR <- Q3 - Q1
 threshold <- 1.5 * IQR
 outlier_indices <- which(apply(scaled_data, 2, function(x) any(x < (Q1 - threshold) | x > (Q3 + threshold))))
 vehicles <- vehicles[, -outlier_indices]
-
+boxplot(outlier_indices)
 
 #nb cluster
-set.seed(123)
+set.seed(123)# Set the random seed for reproducibility
 nb <- NbClust(scaled_data, min.nc=2, max.nc=10, method="kmeans")
 nb$Best.nc
+#--------------------------------------------------------------------------------------------------------------
 
-#set.seed(123)
-wss <- c()
-for(i in 2:10) wss[i] <- sum(kmeans(scaled_data, centers=i)$withinss)
-plot(1:10, wss, type="b", xlab="Number of clusters", ylab="Within groups sum of squares")
+#Elbow methods
+wcss <- vector("numeric", length = 5)
+for (i in 2:5) {
+  kmeans_model <- kmeans(scaled_data, centers = i, nstart = 25)
+  wcss[i] <- kmeans_model$tot.withinss
+}
 
+# Plot the elbow curve
+plot(1:5, wcss, type = "b", xlab = "Number of clusters", ylab = "WCSS")
+title(main = "Elbow curve for k-means clustering")
+abline(v = 3, col = "red", lty = 2)
 
-#set.seed(123)
+# Find the "elbow" in the plot
+diffs <- diff(wcss)
+elbow <- which(diffs == min(diffs)) + 1
+
+# Print the best number of clusters based on the elbow method
+cat("Best number of clusters based on the elbow method:",elbow,"\n")
+#--------------------------------------------------------------------------------------------------------------
+
+#Gap statistics
 gap_stat <- clusGap(scaled_data, FUN = kmeans, nstart = 25,
                     K.max = 10, B = 50)
 plot(gap_stat, main = "Gap Statistic plot for Vehicle Dataset")
 
-cat("Best number of clusters based on the gap statistic method:", gap_stat$Tab)
-
-
-
-# Set the random seed for reproducibility
-#set.seed(123)
+# Identify the optimal number of clusters
+optimal_k <- maxSE(gap_stat$Tab[, "gap"], gap_stat$Tab[, "SE.sim"], method = "Tibs2001SEmax")
+cat("Optimal number of clusters based on the gap statistic: ", optimal_k,"\n")
 
 #--------------------------------------------------------------------------------------------------------------
 # Calculate the average silhouette width for different values of k

@@ -1,20 +1,17 @@
-
 library(readxl)
 library(NbClust)
 library(cluster) # Load the 'cluster' package, which contains the kmeans and silhouette functions
 
 
-
-vehicles <- read_excel("D:/GIT/Image-Processing-System/MachineLearning/datasets/vehicles.xlsx")
-print(vehicles)
+vehicles <- read_xlsx("vehicles.xlsx")
 
 # Select only the first 18 attributes
 vehicles <- vehicles[,1:18]
-plot(vehicles)
+# Set smaller margins
+par(mar = c(5, 5, 2, 2))
 
 # Scale the data
 scaled_data <- scale(vehicles)
-plot(scaled_data)
 
 # Detect and remove outliers using IQR method
 Q1 <- apply(scaled_data, 2, quantile, probs = 0.25, na.rm = TRUE)
@@ -25,6 +22,7 @@ outlier_indices <- which(apply(scaled_data, 2, function(x) any(x < (Q1 - thresho
 vehicles <- vehicles[, -outlier_indices]
 boxplot(outlier_indices)
 
+#-------------------------------------------------------------------------------------------------------------
 #nb cluster
 set.seed(123)# Set the random seed for reproducibility
 nb <- NbClust(scaled_data, min.nc=2, max.nc=10, method="kmeans")
@@ -91,4 +89,3 @@ cat("Best number of clusters based on the silhouette method: ", best_k, "\n")
 
 
 #--------------------------------------------------------------------------------------------------------------
-

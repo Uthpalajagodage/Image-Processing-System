@@ -143,5 +143,25 @@ plot(silhouette_obj)
 avg_sil_width <- mean(silhouette_obj[, 3])
 cat("Average Silhouette Width Score:", avg_sil_width,"\n")
 #--------------------------------------------------------------------------------------------------------------
+# Load the dataset
+vehicles <- read_xlsx("vehicles.xlsx")
+
+# Standardize the variables
+vehicle_data_std <- scale(vehicles)
+
+# Perform PCA analysis
+pca <- prcomp(vehicle_data_std)
+
+# Show eigenvalues/eigenvectors
+summary(pca)
+
+# Show cumulative scores per principal component
+cumsum(pca$sdev^2/sum(pca$sdev^2))
+
+# Create a new transformed dataset with principal components as attributes
+transformed_data <- data.frame(pca$x)
+
+# Choose PCs that provide at least cumulative score > 92%
+num_PCs <- sum(cumsum(pca$sdev^2/sum(pca$sdev^2)) <= 0.92) + 1
 
 

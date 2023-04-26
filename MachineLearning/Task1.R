@@ -1,6 +1,15 @@
 library(readxl)
+
+# Determine the optimal number of clusters using NbClust
 library(NbClust)
-library(cluster) # Load the 'cluster' package
+
+# Elbow Method
+library(ggplot2)
+
+# Load required packages
+library(cluster)
+library(factoextra)
+
 
 # Load the dataset
 vehicles <- read_xlsx("vehicles.xlsx")
@@ -13,20 +22,19 @@ par(mar = c(5, 5, 2, 2))
 # Scale the data
 scaled_data <- scale(vehicles)
 
-# Detect and remove outliers using IQR method
-Q1 <- apply(scaled_data, 2, quantile, probs = 0.25, na.rm = TRUE)
-Q3 <- apply(scaled_data, 2, quantile, probs = 0.75, na.rm = TRUE)
-IQR <- Q3 - Q1
-threshold <- 1.5 * IQR
-outlier_indices <- which(apply(scaled_data, 2, function(x) any(x < (Q1 - threshold) | x > (Q3 + threshold))))
-vehicles <- vehicles[, -outlier_indices]
-boxplot(outlier_indices)
+
+# Detect and remove outliers using the Z-score method
+z_scores <- apply(scaled_data, 1, function(x) sum(abs(x) > 3))
+outliers <- which(z_scores > 0)
+scaled_data <- scaled_data[-outliers,]
+
 #-------------------------------------------------------------------------------------------------------------
 #nb cluster
-set.seed(123)# Set the random seed for reproducibility
+# Perform k-means clustering on the pre-processed data
+set.seed(123)
 par(mar=c(1,1,1,1))
-nb <- NbClust(scaled_data, min.nc=2, max.nc=10, method="kmeans")
-nb$Best.nc
+nbclust_index <- NbClust(scaled_data, min.nc = 2, max.nc = 10, method = "kmeans", index = "all")
+
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -52,7 +60,7 @@ cat("Best number of clusters based on the elbow method:",elbow,"\n")
 
 #Gap statistics
 gap_stat <- clusGap(scaled_data, FUN = kmeans, nstart = 25,
-                    K.max = 10, B = 50)
+                    K.max = 3, B = 50)
 plot(gap_stat, main = "Gap Statistic plot for Vehicle Dataset")
 
 # Identify the optimal number of clusters
@@ -91,49 +99,49 @@ cat("Best number of clusters based on the silhouette method: ", best_k, "\n")
 
 #--------------------------------------------------------------------------------------------------------------
 
-
-# Show the clustered results
-cluster_results <- as.data.frame(km$cluster)
-colnames(cluster_results) <- "Cluster"
-print(cluster_results)
-
-# Calculate the ratio of BSS over TSS
-BSS <- km$betweenss
-TSS <- km$totss
-ratio_BSS_TSS <- BSS/TSS
-print(ratio_BSS_TSS)
-
-# Calculate the BSS and WSS indices
-BSS_indices <- numeric(k)
-WSS_indices <- numeric(k)
-for (i in 1:k) {
-  BSS_indices[i] <- sum((km$centers[i,] - mean(scaled_data))^2) * sum(km$size[km$cluster==i])
-  WSS_indices[i] <- sum((scaled_data[km$cluster==i,] - km$centers[i,])^2)
+# Check if elbow was able to find an optimal number of clusters
+if (!(elbow > 1)) {
+  cat("Error: elbow could not find an optimal number of clusters. Try adjusting the parameters or preprocessing steps.")
+} else {
+  # Perform k-means clustering on the pre-processed data
+  set.seed(123)
+  par(mar=c(1,1,1,1))
+  k <- elbow
+  kmeans_fit <- kmeans(scaled_data, centers = k, nstart = 25)
+  
+  # Print k-means output
+  cat("K-means clustering with", k, "clusters\n")
+  print(kmeans_fit$centers)
+  print(kmeans_fit$cluster)
+  
+  # Calculate BSS and WSS
+  TSS <- sum(apply(scaled_data, 2, var))
+  BSS <- sum(kmeans_fit$size * apply(kmeans_fit$centers, 2, var))
+  WSS <- sum(kmeans_fit$withinss)
+  
+  # Print BSS/TSS ratio and WSS/BSS ratio
+  cat("BSS/TSS ratio:", BSS/TSS, "\n")
+  cat("WSS/BSS ratio:", WSS/BSS, "\n")
+  cat("TSS_indices : ",TSS, "\n")
+  cat("BSS_indices : ",BSS, "\n")
+  cat("WSS_indices : ",WSS,"\n")
+  
 }
-print(BSS_indices)
-print(WSS_indices)
 
 #--------------------------------------------------------------------------------------------------------------
 
-# Create a silhouette plot
-sil <- silhouette(km$cluster, dist(scaled_data))
-plot(sil)
+# Plot the clustering results
+par(mar=c(1,1,1,1))
+plot(scaled_data, col = kmeans_result$cluster)
+points(kmeans_result$centers, col = 1:kmeans_result$cluster, pch = 8, cex = 2)
+
+# Calculate silhouette coefficients and plot the silhouette plot
+silhouette_obj <- silhouette(kmeans_result$cluster, dist(scaled_data))
+plot(silhouette_obj)
 
 # Calculate the average silhouette width score
-sil_width <- summary(sil)$avg.width
-cat("Average silhouette width score:", sil_width, "\n")
-
-# Show the related kmeans output
-print(km)
-
-# Show the information for the centers
-print(km$centers)
-
-# Show the clustered results
-cluster_results <- as.data.frame(km$cluster)
-colnames(cluster_results) <- "Cluster"
-print(cluster_results)
-
+avg_sil_width <- mean(silhouette_obj[, 3])
+cat("Average Silhouette Width Score:", avg_sil_width,"\n")
 #--------------------------------------------------------------------------------------------------------------
 
 

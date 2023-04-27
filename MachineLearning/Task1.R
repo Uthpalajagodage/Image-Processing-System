@@ -10,12 +10,16 @@ library(ggplot2)
 library(cluster)
 library(factoextra)
 
+# Load the required package for PCA
+library(FactoMineR)
+
 
 # Load the dataset
 vehicles <- read_xlsx("vehicles.xlsx")
 
 # Select only the first 18 attributes
 vehicles <- vehicles[,1:18]
+
 # Set smaller margins
 par(mar = c(5, 5, 2, 2))
 
@@ -29,12 +33,28 @@ outliers <- which(z_scores > 0)
 scaled_data <- scaled_data[-outliers,]
 
 #-------------------------------------------------------------------------------------------------------------
-#nb cluster
+# nb cluster
 # Perform k-means clustering on the pre-processed data
 set.seed(123)
 par(mar=c(1,1,1,1))
 nbclust_index <- NbClust(scaled_data, min.nc = 2, max.nc = 10, method = "kmeans", index = "all")
 
+# Reshape NbClust results to a long format
+df_long <- data.frame(
+  Clusters = rep(2:10, each = ncol(nbclust_index$All.index)),
+  Index = rep(colnames(nbclust_index$All.index), times = 9),
+  Value = as.vector(nbclust_index$All.index)
+)
+
+# Plot the bar plot using ggplot2
+ggplot(df_long, aes(x = Clusters, y = Value, fill = Index)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  xlab("Number of clusters") +
+  ylab("Clustering index") +
+  ggtitle("NbClust plot") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_vline(xintercept = nbclust_index$Best.nc[1], linetype = "dashed",color="blue")
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -79,9 +99,9 @@ silhouette_vals <- vector("list", k.max - k.min + 1)
 # Loop through each value of K and perform clustering using K-means algorithm
 for (k in k.min:k.max) {
   km <- kmeans(scaled_data, centers = k, nstart = 10)
-  
-  # Calculate the silhouette width for each data point
-  silhouette_vals[[k - k.min + 1]] <- silhouette(km$cluster, dist(scaled_data))
+
+# Calculate the silhouette width for each data point
+silhouette_vals[[k - k.min + 1]] <- silhouette(km$cluster, dist(scaled_data))
 }
 
 # Calculate the average silhouette width for each value of K
@@ -108,24 +128,24 @@ if (!(elbow > 1)) {
   par(mar=c(1,1,1,1))
   k <- elbow
   kmeans_fit <- kmeans(scaled_data, centers = k, nstart = 25)
-  
+
   # Print k-means output
   cat("K-means clustering with", k, "clusters\n")
   print(kmeans_fit$centers)
   print(kmeans_fit$cluster)
-  
+
   # Calculate BSS and WSS
   TSS <- sum(apply(scaled_data, 2, var))
   BSS <- sum(kmeans_fit$size * apply(kmeans_fit$centers, 2, var))
   WSS <- sum(kmeans_fit$withinss)
-  
+
   # Print BSS/TSS ratio and WSS/BSS ratio
   cat("BSS/TSS ratio:", BSS/TSS, "\n")
   cat("WSS/BSS ratio:", WSS/BSS, "\n")
   cat("TSS_indices : ",TSS, "\n")
   cat("BSS_indices : ",BSS, "\n")
   cat("WSS_indices : ",WSS,"\n")
-  
+
 }
 
 #--------------------------------------------------------------------------------------------------------------
@@ -143,25 +163,93 @@ plot(silhouette_obj)
 avg_sil_width <- mean(silhouette_obj[, 3])
 cat("Average Silhouette Width Score:", avg_sil_width,"\n")
 #--------------------------------------------------------------------------------------------------------------
-# Load the dataset
-vehicles <- read_xlsx("vehicles.xlsx")
 
-# Standardize the variables
-vehicle_data_std <- scale(vehicles)
+# Separate the class label from the data
+vehicle_class <- vehicles[,1]
+vehicles <- vehicles[,-1]
 
-# Perform PCA analysis
-pca <- prcomp(vehicle_data_std)
+# Perform PCA analysis on the data
+pca_result <- PCA(vehicles, graph=FALSE)
 
-# Show eigenvalues/eigenvectors
-summary(pca)
+# Show the eigenvalues of the principal components
+print(pca_result$eig)
 
-# Show cumulative scores per principal component
-cumsum(pca$sdev^2/sum(pca$sdev^2))
+# Show the cumulative score per principal component
+print(pca_result$eig[2,])
 
-# Create a new transformed dataset with principal components as attributes
-transformed_data <- data.frame(pca$x)
+# Create a new dataset with principal components as attributes
+num_pcs <- sum(pca_result$eig[2,] <= 0.92)
+transformed_data <- pca_result$ind$coord[,1:num_pcs]
+print(transformed_data)
 
-# Choose PCs that provide at least cumulative score > 92%
-num_PCs <- sum(cumsum(pca$sdev^2/sum(pca$sdev^2)) <= 0.92) + 1
+#--------------------------------------------------------------------------------------------------------------
 
+# nb cluster
+# Perform k-means clustering on the pre-processed data
+set.seed(123)
+par(mar=c(1,1,1,1))
+nbclust_index <- NbClust(transformed_data, min.nc = 2, max.nc = 10, method = "kmeans", index = "all")
+#--------------------------------------------------------------------------------------------------------------
 
+#Elbow methods
+wcss <- vector("numeric", length = 5)
+for (i in 2:5) {
+  kmeans_model <- kmeans(transformed_data, centers = i, nstart = 25)
+  wcss[i] <- kmeans_model$tot.withinss
+}
+
+# Plot the elbow curve
+plot(1:5, wcss, type = "b", xlab = "Number of clusters", ylab = "WCSS")
+title(main = "Elbow curve for k-means clustering")
+abline(v = 3, col = "red", lty = 2)
+
+# Find the "elbow" in the plot
+diffs <- diff(wcss)
+elbow <- which(diffs == min(diffs)) + 1
+
+# Print the best number of clusters based on the elbow method
+cat("Best number of clusters based on the elbow method:",elbow,"\n")
+
+#--------------------------------------------------------------------------------------------------------------
+
+#Gap statistics
+gap_stat <- clusGap(as.matrix(transformed_data), FUN = kmeans, nstart = 25,
+                     K.max = 3, B = 50)
+
+plot(gap_stat, main = "Gap Statistic plot for Vehicle Dataset")
+
+# Identify the optimal number of clusters
+optimal_k <- maxSE(gap_stat$Tab[, "gap"], gap_stat$Tab[, "SE.sim"], method = "Tibs2001SEmax")
+cat("Optimal number of clusters based on the gap statistic: ", optimal_k,"\n")
+#--------------------------------------------------------------------------------------------------------------
+
+# Calculate the average silhouette width for different values of k
+# Set the range of K values to test
+
+# Create a list to store the silhouette values for each value of K
+silhouette_vals <- vector("list", k.max - k.min + 1)
+
+# Loop through each value of K and perform clustering using K-means algorithm
+k.min <- 2
+k.max <- 5
+silhouette_vals <- vector("list", length = k.max - k.min + 1)
+
+for (k in k.min:k.max) {
+  km <- kmeans(transformed_data, centers = k, nstart = 10)
+  
+  # Calculate the silhouette width for each data point
+  silhouette_vals[[k - k.min + 1]] <- silhouette(km$cluster, dist(transformed_data))
+}
+
+# Calculate the average silhouette width for each value of K
+silhouette_avg <- sapply(silhouette_vals, function(x) mean(x[, 3]))
+
+# Plot the silhouette widths for each value of K
+plot(k.min:k.max, silhouette_avg, type = "b", xlab = "Number of clusters", ylab="Silhouette")
+
+# Find the index of the maximum silhouette width
+best_k <- which.max(silhouette_avg) + k.min - 1
+
+# Print the best number of clusters based on the silhouette method
+cat("Best number of clusters based on the silhouette method: ", best_k, "\n")
+#--------------------------------------------------------------------------------------------------------------

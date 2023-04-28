@@ -311,22 +311,29 @@ transformed_data <- matrix(transformed_data,ncol=1)
 
 #--------------------------------------------------------------------------------------------------------------
 # Plot the clustering results
+
 par(mar=c(1,1,1,1))
-plot(transformed_data, col = kmeans_fit$cluster)
-points(kmeans_fit$centers, col = 1:kmeans_fit$cluster, pch = 8, cex = 2)
+plot(transformed_data, col = kmeans_transf$cluster)
+points(kmeans_transf$centers, col = 1:kmeans_fit$cluster, pch = 8, cex = 2)
 
 # Calculate silhouette coefficients and plot the silhouette plot
-silhouette_obj <- silhouette(kmeans_fit$cluster, dist(transformed_data))
+silhouette_obj <- silhouette(kmeans_transf$cluster, dist(transformed_data))
 plot(silhouette_obj)
 
 # Calculate the average silhouette width score
 avg_sil_width <- mean(silhouette_obj[, 3])
 cat("Average Silhouette Width Score:", avg_sil_width,"\n")
 #--------------------------------------------------------------------------------------------------------------
-library(cluster)
+# Calculation of the Calinski-Harabasz index for evaluating clustering performance
+calinski_harabasz_pca <- function(cluster_result, data) {
+  k <- length(unique(cluster_result$cluster))
+  n <- nrow(data)
+  BSS <- cluster_result$betweenss
+  WSS <- cluster_result$tot.withinss
+  
+  ch_index <- ((n - k) / (k - 1)) * (BSS / WSS)
+  return(ch_index)
+}
 
-# calculate Calinski-Harabasz index
-ch_score <- calinski_harabasz(data, kmeans_fit$cluster)
-
-# print the Calinski-Harabasz score
-cat("Calinski-Harabasz score:", ch_score)
+ch_index_pca <- calinski_harabasz_pca(kmeans_transf, transformed_data)
+ch_index_pca

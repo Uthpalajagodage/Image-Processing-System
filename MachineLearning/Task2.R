@@ -30,7 +30,9 @@ smape <- function(actual, predicted) {
 
 
 # Load the UOW consumption dataset
-uow_consumption_dataset <- read_xlsx("data sets/uow_consumption.xlsx")
+uow_consumption_dataset <- read_xlsx("datasets/uow_consumption.xlsx")
+
+
 
 summary(uow_consumption_dataset) # Get summary statistics for the column
 

@@ -32,10 +32,10 @@ par(mar = c(5, 5, 2, 2))
 scaled_data <- scale(v_data)
 
 
-# # Detect and remove outliers using the Z-score method
-# z_scores <- apply(scaled_data, 1, function(x) sum(abs(x) > 3))
-# outliers <- which(z_scores > 0)
-# scaled_data <- scaled_data[-outliers,]
+# Detect and remove outliers using the Z-score method
+z_scores <- apply(scaled_data, 1, function(x) sum(abs(x) > 3))
+outliers <- which(z_scores > 0)
+scaled_data <- scaled_data[-outliers,]
 # 
 # #-------------------------------------------------------------------------------------------------------------
 # # nb cluster
@@ -104,7 +104,7 @@ scaled_data <- scale(v_data)
 # # Loop through each value of K and perform clustering using K-means algorithm
 # for (k in k.min:k.max) {
 #   km <- kmeans(scaled_data, centers = k, nstart = 10)
-#   
+# 
 #   # Calculate the silhouette width for each data point
 #   silhouette_vals[[k - k.min + 1]] <- silhouette(km$cluster, dist(scaled_data))
 # }
@@ -133,17 +133,17 @@ scaled_data <- scale(v_data)
 #   par(mar=c(1,1,1,1))
 #   k <- elbow
 #   kmeans_fit <- kmeans(scaled_data, centers = k, nstart = 25)
-#   
+# 
 #   # Print k-means output
 #   cat("K-means clustering with", k, "clusters\n")
 #   print(kmeans_fit$centers)
 #   print(kmeans_fit$cluster)
-#   
+# 
 #   # Calculate BSS and WSS
 #   TSS <- sum(apply(scaled_data, 2, var))
 #   BSS <- sum(kmeans_fit$size * apply(kmeans_fit$centers, 2, var))
 #   WSS <- sum(kmeans_fit$withinss)
-#   
+# 
 #   # Print BSS/TSS ratio and WSS/BSS ratio
 #   cat("BSS/TSS ratio:", BSS/TSS, "\n")
 #   cat("WSS/BSS ratio:", WSS/BSS, "\n")
@@ -168,17 +168,17 @@ scaled_data <- scale(v_data)
 
 
 # Perform PCA analysis on the data
-pca_result <- PCA(scaled_data, graph=TRUE)
+pca_result_ <- PCA(scaled_data, ncp = 8, graph=FALSE)
 
 # Show the eigenvalues of the principal components
-print(pca_result$eig)
+print(pca_result_$eig)
 
 # Show the cumulative score per principal component
-print(pca_result$eig[2,])
+print(pca_result_$eig[2,])
 
 # Create a new dataset with principal components as attributes
-num_pcs <- sum(pca_result$eig[2,] <= 0.92)
-transformed_data <- pca_result$ind$coord[,1:num_pcs]
+num_pcs <- sum(pca_result_$eig[2,] <= 0.92)
+transformed_data <- pca_result_$ind$coord[,1:num_pcs]
 print(transformed_data)
 
 #--------------------------------------------------------------------------------------------------------------

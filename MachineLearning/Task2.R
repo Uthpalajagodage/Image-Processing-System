@@ -8,31 +8,8 @@ library(keras)
 
 #Part 1
 
-# Define the root-mean-square error (RMSE) function
-rmse <- function(error) {
-  return(sqrt(mean(error^2)))
-}
-
-# Define the mean absolute error (MAE) function
-mae <- function(error) {
-  return(mean(abs(error)))
-}
-
-# Define the mean absolute percentage error (MAPE) function
-mape <- function(actual, predicted) {
-  return(mean(abs((actual - predicted)/actual)) * 100)
-}
-
-# Define the symmetric mean absolute percentage error (sMAPE) function
-smape <- function(actual, predicted) {
-  return(2 * mean(abs(actual - predicted) / (abs(actual) + abs(predicted))) * 100)
-}
-
-
 # Load the UOW consumption dataset
 uow_consumption_dataset <- read_xlsx("datasets/uow_consumption.xlsx")
-
-
 
 summary(uow_consumption_dataset) # Get summary statistics for the column
 
@@ -177,7 +154,7 @@ cat("The best two-hidden layer neural network structure is",
 
 
 
-#Part 2 
+#Part 2
 
 
 # Define a function to build a neural network model
@@ -241,27 +218,25 @@ normalize <- function(x) {
   return((x - min(x)) / (max(x) - min(x)))
 }
 
+# Compute range before normalization
+range_before <- apply(train[, -1], 2, range)
 
+# Normalize the dataset
+uow_dataset_train_normalized <- apply(train[, -1], 2, normalize)
 
-# Compute the range of each column before and after normalization
-train_range <- apply(train[, -1], 2, range)
-train_normalized_range <- apply(uow_dataset_train_normalized[, -1], 2, range)
+# Compute range after normalization
+range_after <- apply(uow_dataset_train_normalized, 2, range)
 
-# Create a matrix with the range values
-range_matrix <- rbind(train_range[1, ], train_normalized_range[1, ])
+# Plot range before normalization
+plot(range_before, main = "Range Before Normalization", xlab = "Features", ylab = "Range")
 
-# Define the x-axis labels
-x_labels <- colnames(train)[-1]
+# Plot range after normalization
+plot(range_after, main = "Range After Normalization", xlab = "Features", ylab = "Range")
 
-# Plot the range values as a bar chart
-barplot(range_matrix, beside = TRUE, col = c("red", "blue"),
-        xlab = "Column", ylab = "Value", main = "Effect of Normalization on Value Range",
-        names.arg = x_labels, legend.text = c("Before Normalization", "After Normalization"))
 
 
 # Apply normalization function to all columns except the date column in the testing set
-uow_dataset_test_normalized <- test
-uow_dataset_test_normalized[, -1] <- apply(test[, -1], 2, normalize)
+uow_dataset_test_normalized <- apply(test[, -1], 2, normalize)
 
 # Rename columns in the testing set to match the column names in the training set
 colnames(uow_dataset_test_normalized) <- colnames(uow_dataset_train_normalized)
@@ -280,11 +255,15 @@ narx_input_vectors <- list(
 # Build NARX models
 # Define an empty list to store the models
 narx_models <- list()
+summary(uow_dataset_train_normalized)
+summary(uow_dataset_test_normalized)
 # Use a for loop to iterate over the input vectors
 for (i in 1:length(narx_input_vectors)) {
   # Build a MLP model using the build_neural_net function, passing in the normalized training and test datasets,
   narx_models[[i]] <- build_neural_net(uow_dataset_train_normalized, uow_dataset_test_normalized, narx_input_vectors[[i]], c(5))
 }
+
+uow_dataset_test_normalized <- as.data.frame(uow_dataset_test_normalized)
 
 # Evaluate NARX models
 # Define an empty list to store the evaluation metrics
@@ -364,4 +343,4 @@ denormalized_predictions <- denormalize(best_model_predictions, min_value, max_v
 # Plot the predicted output vs. desired output using a line chart
 plot(test$hour_20, type = "l", col = "blue", xlab = "Time", ylab = "Hour 20 Consumption", main = "Line Chart of Desired vs. Predicted Output")
 lines(denormalized_predictions, col = "red")
-legend("topleft", legend = c("Desired Output", "Predicted Output"), col = c("blue", "red"), lty=1, cex=0.8)
+legend("topleft", legend = c("Desired Output", "Predicted Output"), col = c("blue", "red"),lty=1,cex=0.8)

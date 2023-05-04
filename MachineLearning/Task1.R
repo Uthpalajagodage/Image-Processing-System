@@ -17,7 +17,7 @@ library(FactoMineR)
 
 library(fpc)
 
-
+#PART 1
 
 # Load the dataset
 v_data <- read_xlsx("vehicles.xlsx")
@@ -36,136 +36,146 @@ scaled_data <- scale(v_data)
 z_scores <- apply(scaled_data, 1, function(x) sum(abs(x) > 3))
 outliers <- which(z_scores > 0)
 scaled_data <- scaled_data[-outliers,]
-# 
-# #-------------------------------------------------------------------------------------------------------------
-# # nb cluster
-# # Perform k-means clustering on the pre-processed data
-# set.seed(123)
-# par(mar=c(1,1,1,1))
-# nbclust_index <- NbClust(scaled_data, min.nc = 2, max.nc = 10, method = "kmeans", index = "all")
-# 
-# # Reshape NbClust results to a long format
-# df_long <- data.frame(
-#   Clusters = rep(2:10, each = ncol(nbclust_index$All.index)),
-#   Index = rep(colnames(nbclust_index$All.index), times = 9),
-#   Value = as.vector(nbclust_index$All.index)
-# )
-# 
-# # Plot the bar plot using ggplot2
-# ggplot(df_long, aes(x = Clusters, y = Value, fill = Index)) +
-#   geom_bar(stat = "identity", position = "dodge") +
-#   xlab("Number of clusters") +
-#   ylab("Clustering index") +
-#   ggtitle("NbClust plot") +
-#   theme_minimal() +
-#   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-#   geom_vline(xintercept = nbclust_index$Best.nc[1], linetype = "dashed",color="blue")
-# 
-# #--------------------------------------------------------------------------------------------------------------
-# 
-# #Elbow methods
-# wcss <- vector("numeric", length = 5)
-# for (i in 2:5) {
-#   kmeans_model <- kmeans(scaled_data, centers = i, nstart = 25)
-#   wcss[i] <- kmeans_model$tot.withinss
-# }
-# 
-# # Plot the elbow curve
-# plot(1:5, wcss, type = "b", xlab = "Number of clusters", ylab = "WCSS")
-# title(main = "Elbow curve for k-means clustering")
-# abline(v = 3, col = "red", lty = 2)
-# 
-# # Find the "elbow" in the plot
-# diffs <- diff(wcss)
-# elbow <- which(diffs == min(diffs)) + 1
-# 
-# # Print the best number of clusters based on the elbow method
-# cat("Best number of clusters based on the elbow method:",elbow,"\n")
-# #--------------------------------------------------------------------------------------------------------------
-# 
-# #Gap statistics
-# gap_stat <- clusGap(scaled_data, FUN = kmeans, nstart = 25,
-#                     K.max = 3, B = 50)
-# plot(gap_stat, main = "Gap Statistic plot for Vehicle Dataset")
-# 
-# # Identify the optimal number of clusters
-# optimal_k <- maxSE(gap_stat$Tab[, "gap"], gap_stat$Tab[, "SE.sim"], method = "Tibs2001SEmax")
-# cat("Optimal number of clusters based on the gap statistic: ", optimal_k,"\n")
-# 
-# #--------------------------------------------------------------------------------------------------------------
-# # Calculate the average silhouette width for different values of k
-# # Set the range of K values to test
-# k.min <- 2
-# k.max <- 10
-# 
-# # Create a list to store the silhouette values for each value of K
-# silhouette_vals <- vector("list", k.max - k.min + 1)
-# 
-# # Loop through each value of K and perform clustering using K-means algorithm
-# for (k in k.min:k.max) {
-#   km <- kmeans(scaled_data, centers = k, nstart = 10)
-# 
-#   # Calculate the silhouette width for each data point
-#   silhouette_vals[[k - k.min + 1]] <- silhouette(km$cluster, dist(scaled_data))
-# }
-# 
-# # Calculate the average silhouette width for each value of K
-# silhouette_avg <- sapply(silhouette_vals, function(x) mean(x[, 3]))
-# 
-# # Plot the silhouette widths for each value of K
-# plot(k.min:k.max, silhouette_avg, type = "b", xlab = "Number of clusters", ylab="Silhouette")
-# 
-# # Find the index of the maximum silhouette width
-# best_k <- which.max(silhouette_avg) + k.min - 1
-# 
-# # Print the best number of clusters based on the silhouette method
-# cat("Best number of clusters based on the silhouette method: ", best_k, "\n")
-# 
-# 
-# #--------------------------------------------------------------------------------------------------------------
-# 
-# # Check if elbow was able to find an optimal number of clusters
-# if (!(elbow > 1)) {
-#   cat("Error: elbow could not find an optimal number of clusters. Try adjusting the parameters or preprocessing steps.")
-# } else {
-#   # Perform k-means clustering on the pre-processed data
-#   set.seed(123)
-#   par(mar=c(1,1,1,1))
-#   k <- elbow
-#   kmeans_fit <- kmeans(scaled_data, centers = k, nstart = 25)
-# 
-#   # Print k-means output
-#   cat("K-means clustering with", k, "clusters\n")
-#   print(kmeans_fit$centers)
-#   print(kmeans_fit$cluster)
-# 
-#   # Calculate BSS and WSS
-#   TSS <- sum(apply(scaled_data, 2, var))
-#   BSS <- sum(kmeans_fit$size * apply(kmeans_fit$centers, 2, var))
-#   WSS <- sum(kmeans_fit$withinss)
-# 
-#   # Print BSS/TSS ratio and WSS/BSS ratio
-#   cat("BSS/TSS ratio:", BSS/TSS, "\n")
-#   cat("WSS/BSS ratio:", WSS/BSS, "\n")
-#   cat("TSS_indices : ",TSS, "\n")
-#   cat("BSS_indices : ",BSS, "\n")
-#   cat("WSS_indices : ",WSS,"\n")
-# }
-# #--------------------------------------------------------------------------------------------------------------
-# 
-# # Plot the clustering results
-# par(mar=c(1,1,1,1))
-# plot(scaled_data, col = kmeans_fit$cluster)
-# points(kmeans_fit$centers, col = 1:kmeans_fit$cluster, pch = 8, cex = 2)
-# # Calculate silhouette coefficients and plot the silhouette plot
-# silhouette_obj <- silhouette(kmeans_fit$cluster, dist(scaled_data))
-# plot(silhouette_obj)
-# # Calculate the average silhouette width score
-# avg_sil_width <- mean(silhouette_obj[, 3])
-# cat("Average Silhouette Width Score:", avg_sil_width,"\n")
-# --------------------------------------------------------------------------------------------------------------
-  
 
+# Conduct principal component analysis on the standardized data
+pca <- prcomp(scaled_data)
+# Build a data frame containing the initial two principal components
+pc_df <- data.frame(PC1 = pca$x[,1], PC2=pca$x[,2])
+# Build a scatter plot of the first two principal components
+ggplot(pc_df, aes(x = PC1, y = PC2)) + 
+  geom_point() + 
+  xlab("Principal Component 1") + 
+  ylab("Principal Component 2")
+
+#-------------------------------------------------------------------------------------------------------------
+# nb cluster
+# Perform k-means clustering on the pre-processed data
+set.seed(123)
+par(mar=c(1,1,1,1))
+nbclust_index <- NbClust(scaled_data, min.nc = 2, max.nc = 10, method = "kmeans", index = "all")
+
+# Reshape NbClust results to a long format
+df_long <- data.frame(
+  Clusters = rep(2:10, each = ncol(nbclust_index$All.index)),
+  Index = rep(colnames(nbclust_index$All.index), times = 9),
+  Value = as.vector(nbclust_index$All.index)
+)
+
+# Plot the bar plot using ggplot2
+ggplot(df_long, aes(x = Clusters, y = Value, fill = Index)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  xlab("Number of clusters") +
+  ylab("Clustering index") +
+  ggtitle("NbClust plot") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_vline(xintercept = nbclust_index$Best.nc[1], linetype = "dashed",color="blue")
+
+#--------------------------------------------------------------------------------------------------------------
+
+#Elbow methods
+wcss <- vector("numeric", length = 5)
+for (i in 2:5) {
+  kmeans_model <- kmeans(scaled_data, centers = i, nstart = 25)
+  wcss[i] <- kmeans_model$tot.withinss
+}
+
+# Plot the elbow curve
+plot(1:5, wcss, type = "b", xlab = "Number of clusters", ylab = "WCSS")
+title(main = "Elbow curve for k-means clustering")
+abline(v = 3, col = "red", lty = 2)
+
+# Find the "elbow" in the plot
+diffs <- diff(wcss)
+elbow <- which(diffs == min(diffs)) + 1
+
+# Print the best number of clusters based on the elbow method
+cat("Best number of clusters based on the elbow method:",elbow,"\n")
+#--------------------------------------------------------------------------------------------------------------
+
+#Gap statistics
+gap_stat <- clusGap(scaled_data, FUN = kmeans, nstart = 25,
+                    K.max = 3, B = 50)
+plot(gap_stat, main = "Gap Statistic plot for Vehicle Dataset")
+
+# Identify the optimal number of clusters
+optimal_k <- maxSE(gap_stat$Tab[, "gap"], gap_stat$Tab[, "SE.sim"], method = "Tibs2001SEmax")
+cat("Optimal number of clusters based on the gap statistic: ", optimal_k,"\n")
+
+#--------------------------------------------------------------------------------------------------------------
+# Calculate the average silhouette width for different values of k
+# Set the range of K values to test
+k.min <- 2
+k.max <- 10
+
+# Create a list to store the silhouette values for each value of K
+silhouette_vals <- vector("list", k.max - k.min + 1)
+
+# Loop through each value of K and perform clustering using K-means algorithm
+for (k in k.min:k.max) {
+  km <- kmeans(scaled_data, centers = k, nstart = 10)
+
+  # Calculate the silhouette width for each data point
+  silhouette_vals[[k - k.min + 1]] <- silhouette(km$cluster, dist(scaled_data))
+}
+
+# Calculate the average silhouette width for each value of K
+silhouette_avg <- sapply(silhouette_vals, function(x) mean(x[, 3]))
+
+# Plot the silhouette widths for each value of K
+plot(k.min:k.max, silhouette_avg, type = "b", xlab = "Number of clusters", ylab="Silhouette")
+
+# Find the index of the maximum silhouette width
+best_k <- which.max(silhouette_avg) + k.min - 1
+
+# Print the best number of clusters based on the silhouette method
+cat("Best number of clusters based on the silhouette method: ", best_k, "\n")
+
+
+#--------------------------------------------------------------------------------------------------------------
+
+# Check if elbow was able to find an optimal number of clusters
+if (!(elbow > 1)) {
+  cat("Error: elbow could not find an optimal number of clusters. Try adjusting the parameters or preprocessing steps.")
+} else {
+  # Perform k-means clustering on the pre-processed data
+  set.seed(123)
+  par(mar=c(1,1,1,1))
+  k <- elbow
+  kmeans_fit <- kmeans(scaled_data, centers = k, nstart = 25)
+
+  # Print k-means output
+  cat("K-means clustering with", k, "clusters\n")
+  print(kmeans_fit$centers)
+  print(kmeans_fit$cluster)
+
+  # Calculate BSS and WSS
+  TSS <- sum(apply(scaled_data, 2, var))
+  BSS <- sum(kmeans_fit$size * apply(kmeans_fit$centers, 2, var))
+  WSS <- sum(kmeans_fit$withinss)
+
+  # Print BSS/TSS ratio and WSS/BSS ratio
+  cat("BSS/TSS ratio:", BSS/TSS, "\n")
+  cat("WSS/BSS ratio:", WSS/BSS, "\n")
+  cat("TSS_indices : ",TSS, "\n")
+  cat("BSS_indices : ",BSS, "\n")
+  cat("WSS_indices : ",WSS,"\n")
+}
+#--------------------------------------------------------------------------------------------------------------
+
+# Plot the clustering results
+par(mar=c(1,1,1,1))
+plot(scaled_data, col = kmeans_fit$cluster)
+points(kmeans_fit$centers, col = 1:kmeans_fit$cluster, pch = 8, cex = 2)
+# Calculate silhouette coefficients and plot the silhouette plot
+silhouette_obj <- silhouette(kmeans_fit$cluster, dist(scaled_data))
+plot(silhouette_obj)
+# Calculate the average silhouette width score
+avg_sil_width <- mean(silhouette_obj[, 3])
+cat("Average Silhouette Width Score:", avg_sil_width,"\n")
+#--------------------------------------------------------------------------------------------------------------
+
+#PART 2
 
 # Perform PCA analysis on the data
 pca_result_ <- PCA(scaled_data, ncp = 8, graph=FALSE)
@@ -180,6 +190,7 @@ print(pca_result_$eig[2,])
 num_pcs <- sum(pca_result_$eig[2,] <= 0.92)
 transformed_data <- pca_result_$ind$coord[,1:num_pcs]
 print(transformed_data)
+
 
 #--------------------------------------------------------------------------------------------------------------
 
@@ -302,6 +313,7 @@ if (!(elbow > 1)) {
 }
 
 #--------------------------------------------------------------------------------------------------------------
+
 # Plot the clustering results
 
 par(mar=c(1,1,1,1))
@@ -329,3 +341,14 @@ calinski_harabasz_pca <- function(cluster_result, data) {
 
 ch_index_pca <- calinski_harabasz_pca(kmeans_transf, transformed_data)
 ch_index_pca
+
+# Plot the CH index
+cal_h_data <- data.frame(K = 1:length(ch_index_pca), CH_Index = ch_index_pca)
+
+ggplot(cal_h_data, aes(x = K, y = CH_Index)) +
+  geom_point(color = "blue") +
+  labs(x = "Number of Clusters (K)", y = "Calinski-Harabasz Index") +
+  ggtitle("Calinski-Harabasz Index for K-means Clustering Results")
+
+
+

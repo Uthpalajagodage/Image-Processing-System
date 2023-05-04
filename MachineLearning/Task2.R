@@ -52,7 +52,7 @@ ggplot(data.frame(trained_data), aes(x=1:length(trained_data), y=trained_data)) 
        x = "Sample Number",
        y = "Consumption")
 
-
+#--------------------------------------------------------------------------------------------------------------
 # Determine how many time-delayed inputs there are.
 no_inputs <- 60
 
@@ -68,6 +68,7 @@ for (i in 1:(length(trained_data)-no_inputs)) {
 # The input/output matrix be normalized
 matrix_input_output <- apply(matrix_input_output, 2, function(x) (x - mean(x)) / sd(x))
 
+#--------------------------------------------------------------------------------------------------------------
 # Define the neural network architecture that will be assessed.
 structure <- list(
   c(5),
@@ -100,52 +101,38 @@ for (i in 1:length(structure)) {
   testing_inputs <- matrix(test_dataset[1:(length(test_dataset)-no_inputs)], ncol=no_inputs, byrow=TRUE)
   
   # Predict the test data's output values.
-output_mlp <- predict(mlp, testing_inputs)
-  
+  output_mlp <- predict(mlp, testing_inputs)
   # Denormalize the anticipated results.
-output_mlp <- (mlp_output * sd(trained_data)) + mean(trained_data)
-  
+  output_mlp <- (output_mlp * sd(trained_data)) + mean(trained_data)
   # Determine the MAE for the actual output values and the predicted output values.
-  result_mae <- mae(mlp_output - test_dataset[(no_inputs+1):length(test_dataset)])
-  
+  result_mae <- mae(output_mlp - test_dataset[(no_inputs+1):length(test_dataset)])
   cat("the test performances for c(",structure[[i]],")\n")
-  
   # Print MAE result
   cat("The MAE for the test data is:", round(result_mae, 2),"\n")
-  
   # Determine the RMSE between the output values that were expected and those that were achieved.
-result_rmse <- rmse(mlp_output - test_dataset[(no_inputs+1):length(test_dataset)])
-  
+  result_rmse <- rmse(output_mlp - test_dataset[(no_inputs+1):length(test_dataset)])
   # Print the RMSE result
   cat("The RMSE for the test data is:", round(result_rmse, 2),"\n")
-  
   # Define the mean absolute percentage error (MAPE) function
   mape <- function(actual, predicted) {
     return(mean(abs((actual - predicted)/actual)) * 100)
   }
-  
   # Determine the MAPE using the predicted and actual output values.
-result_mape <- mape(test_dataset[(no_inputs+1):length(test_dataset)], output_mlp)
-  
+  result_mape <- mape(test_dataset[(no_inputs+1):length(test_dataset)], output_mlp)
   # Print the MAPE result
   cat("The MAPE for the test data is:", round(result_mape, 2),"\n")
-  
   # The symmetric mean absolute percentage error (sMAPE) function should be defined.
   smape <- function(actual, predicted) {
     return(2 * mean(abs(actual - predicted) / (abs(actual) + abs(predicted))) * 100)
   }
-  
   # Make a SMAPE calculation using the predicted and actual output values.
-  result_smape <- smape(test_dataset[(no_inputs+1):length(test_dataset)], mlp_output)
-  
+  result_smape <- smape(test_dataset[(no_inputs+1):length(test_dataset)], output_mlp)
   # Print the sMAPE result
   cat("The sMAPE for the test data is:", round(result_smape, 2),"\n\n")
-  
   # Save the outcome for the current neural network configuration.
   result[[i]] <- c(structure[[i]], result_mae, result_rmse, result_mape, result_smape)
-  
 }
-
+#--------------------------------------------------------------------------------------------------------------
 # Create a data frame of the result
 results_dframe <- data.frame(matrix(unlist(result), ncol=5, byrow=TRUE))
 colnames(results_dframe) <- c("Structure", "MAE", "RMSE", "MAPE (%)", "sMAPE (%)")
@@ -170,41 +157,41 @@ cat("The best two-hidden layer neural network structure is",
 #Part 2
 
 
-# Define a procedure for constructing a neural network model.
-build_neural_network <- function(trained_data, test_dataset, input_vars, hidden_structure) {
+# Define a function to build a neural network model
+build_neural_network <- function(train_data, test_data, input_vars, hidden_structure) {
   
-  # Make a neural network formula.
+  # Create formula for the neural network
   formula <- paste("hour_20 ~", paste(input_vars, collapse = " + "))
   
-  # Create the neural network model utilizing the neuralnet package.
- model_nn <- neuralnetwork(as.formula(formula), trained_data, hidden = hidden_structure)
+  # Build the neural network model using the neuralnet package
+  nn_model <- neuralnet(as.formula(formula), train_data, hidden = hidden_structure)
   
-  # The test data for the prediction
-matrix_test <- as.matrix(test_dataset[, input_vars, drop = FALSE])
-  colnames(matrix_test) <- colnames(trained_data[, input_vars, drop = FALSE])
+  # Prepare the test data for prediction
+  test_matrix <- as.matrix(test_data[, input_vars, drop = FALSE])
+  colnames(test_matrix) <- colnames(train_data[, input_vars, drop = FALSE])
   
-  # Use the neural network model to predict things.
-  predictions <- predict(model_nn, matrix_test)
+  # Make predictions using the neural network model
+  predictions <- predict(nn_model, test_matrix)
   
-  # Bring back the neural network model and its forecasts.
-  return(list(model = model_nn, predictions = predictions))
+  # Return the neural network model and its predictions
+  return(list(model = nn_model, predictions = predictions))
 }
 
-  # function to determine various evaluation metrics
-  metrics_calculation <- function(actual_val, predicted_val) {
-  # Determine the error's root mean square
-  rmse <- sqrt(mean((actual_val - predicted_val)^2))
+# Function to calculate different evaluation metrics
+metrics_calculation <- function(actual_values, predicted_values) {
+  # Calculate Root Mean Squared Error
+  rmse <- sqrt(mean((actual_values - predicted_values)^2))
   
-  # Make a mean absolute error calculation.
-  mae <- mean(abs(actual_val - predicted_val))
+  # Calculate Mean Absolute Error
+  mae <- mean(abs(actual_values - predicted_values))
   
-  # Make a mean absolute percentage error calculation.
-  mape <- mean(abs((actual_val - predicted_val) / actual_val)) * 100
+  # Calculate Mean Absolute Percentage Error
+  mape <- mean(abs((actual_values - predicted_values) / actual_values)) * 100
   
-  # Determine the Symmetric Mean Absolute Percentage Error.
-  smape <- mean(abs(actual_val - predicted_val) / (abs(actual_val) + abs(predicted_val)) * 2) * 100
+  # Calculate Symmetric Mean Absolute Percentage Error
+  smape <- mean(abs(actual_values - predicted_values) / (abs(actual_values) + abs(predicted_values)) * 2) * 100
   
-  # Provide a list including all the evaluation metrics.
+  # Return a list containing all the evaluation metrics
   return(list(RMSE = rmse, MAE = mae, MAPE = mape, sMAPE = smape))
 }
 
@@ -268,12 +255,12 @@ vectors_narx_input <- list(
 # Build NARX models
 # Create a list that is empty to hold the models.
 models_narx <- list()
-summary(UOW_dataset_train_normalized)
-summary(UOW_dataset_test_normalized)
+
+
 # Use a for loop to iterate over the input vectors
-for (i in 1:length(narx_input_vectors)) {
+for (i in 1:length(vectors_narx_input)) {
   # Build a MLP model using the build_neural_net function, passing in the normalized training and test datasets,
-  models_narx[[i]] <- build_neural_net(UOW_dataset_train_normalized, UOW_dataset_test_normalized,vectors_narx_input[[i]], c(5))
+  models_narx[[i]] <- build_neural_network(UOW_dataset_train_normalized, UOW_dataset_test_normalized,vectors_narx_input[[i]], c(5))
 }
 
 UOW_dataset_test_normalized <- as.data.frame(UOW_dataset_test_normalized)
@@ -282,10 +269,10 @@ UOW_dataset_test_normalized <- as.data.frame(UOW_dataset_test_normalized)
 # Define an empty list to store the evaluation metrics
 metrics_narx_evaluation <- list()
 # Use a for loop to iterate over the models
-for (i in 1:length(narx_models)) {
+for (i in 1:length(models_narx)) {
   # Calculate the evaluation metrics (RMSE, MAE, MAPE, and sMAPE) for each model using the calculate_metrics function,
   # passing in the actual test set values and the predictions from the current model
-  metrics_narx_evaluation[[i]] <- metrics_calculation(UOW_dataset_test_normalized$hour_20, narx_models[[i]]$predictions)
+  metrics_narx_evaluation[[i]] <- metrics_calculation(UOW_dataset_test_normalized$hour_20, models_narx[[i]]$predictions)
 }
 
 # Create a comparison table for NARX models
@@ -298,13 +285,13 @@ table_narx_comparison <- data.frame(
   sMAPE = sapply(metrics_narx_evaluation, function(x) x$sMAPE)
 )
 # Print the comparison table to the console
-print(narx_comparison_table)
+print(table_narx_comparison)
 
 
 metrics_evaluation <- list()
 
-for (i in 1:length(narx_models)) {
-  metrics_evaluation[[i]] <- metrics_calculation(UOW_dataset_test_normalized$hour_20, narx_models[[i]]$predictions)
+for (i in 1:length(models_narx)) {
+  metrics_evaluation[[i]] <- metrics_calculation(UOW_dataset_test_normalized$hour_20, models_narx[[i]]$predictions)
 }
 
 # Create 12–15 additional models with various hidden layer structures and input vectors.
@@ -312,13 +299,13 @@ for (i in 1:length(narx_models)) {
 # One-hidden-layer and two-hidden-layer networks are compared in terms of efficiency.
 
 # Construct a single hidden layer neural network.
-hidden_model_1 <- build_neural_net(UOW_dataset_train_normalized, UOW_dataset_test_normalized, c("lag_1", "hour_18", "hour_19"), c(5))
+model_1_hidden <- build_neural_network(UOW_dataset_train_normalized, UOW_dataset_test_normalized, c("lag_1", "hour_18", "hour_19"), c(5))
 
 # Create a neural network with two hidden layers.
-hidden_model_2 <- build_neural_net(UOW_dataset_train_normalized, UOW_dataset_test_normalized, c("lag_1", "lag_2", "lag_3", "lag_4", "lag_7", "hour_18", "hour_19"), c(3, 2))
+model_2_hidden <- build_neural_network(UOW_dataset_train_normalized, UOW_dataset_test_normalized, c("lag_1", "lag_2", "lag_3", "lag_4", "lag_7", "hour_18", "hour_19"), c(3, 2))
 
 # The total amount of weight parameters per network is ridiculous
-hidden_num_weights_1 <- sum(sapply(hidden_model_1$model$weights, length))
+hidden_num_weights_1 <- sum(sapply(model_2_hidden$model$weights, length))
 hidden_num_weights_2 <- sum(sapply(model_2_hidden$model$weights, length))
 
 # For each network, print the number of weight parameters.
@@ -331,17 +318,17 @@ denormalize <- function(x, min_value, max_value) {
   return(x * (max_value - min_value) + min_value)
 }
 # Based on the RMSE evaluation metric, identify the optimal model's index.
-index_best_model <- which.min(sapply(evaluation_metrics, function(x) x$RMSE))
+index_best_model <- which.min(sapply(metrics_evaluation, function(x) x$RMSE))
 
 # Get the best model and its predictions
 # check the length of models list
-length(narx_models)
+length(models_narx)
 
 # change best_model_index to a legitimate index
 index_best_model <- 1
 
 # choose the best model
-best_model <- narx_models[[best_model_index]]
+best_model <- models_narx[[index_best_model]]
 predictions_best_model <- best_model$predictions
 
 # Determine the variable 'hour_20's' minimum and maximum values in the training set.
